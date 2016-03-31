@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Bootstrap 101 Template</title>
+
+        <!-- Bootstrap -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+    </head>
+    <body>
+        <div class="container">
+            <h1>RPi GPIO controll!</h1>
+
+            <div class="row">
+            {{#gpios}}
+                <div class="col-md-3">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">GPIO {{pin}}</div>
+                        <div class="panel-body">
+                            {{#active}}
+                                <a href="/set/{{pin}}/0/" role="button" class="btn btn-success btn-lg btn-block">Toggle!</a>
+                            {{/active}}
+                            {{^active}}
+                                <a href="/set/{{pin}}/1/" role="button" class="btn btn-danger btn-lg btn-block">Toggle!</a>
+                            {{/active}}
+                        </div>
+                    </div>
+                    <h3>{{}}</h3>
+                </div>
+            {{/gpios}}
+            </div>
+
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+        </div>
+    </body>
+</html>
+<!-- Programmed in Lua by max1220. -->
+<!-- See: https://github.com/max1220/turbogpio -->
