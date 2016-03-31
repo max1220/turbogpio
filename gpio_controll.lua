@@ -17,6 +17,8 @@ function write(what, where)
         simulation[tostring(where)] = tostring(what)
         dprint("SIMULATION WRITE", ("%q %q"):format(tostring(what), tostring(where)))
         return
+    else
+        dprint("WRITE", ("%q %q"):format(tostring(what), tostring(where)))
     end
 
     local f = io.open(where, "w")
@@ -31,8 +33,10 @@ end
 
 function read(where)
     if simulation then
-        dprint("SIMULATION READING", where)
+        dprint("SIMULATION READ", ("%q %q"):format(tostring(where), tostring(simulation[where] or 0)))
         return simulation[where] or 0
+    else
+        dprint("READ", where)
     end
 
     local f = io.open(where, "r")
