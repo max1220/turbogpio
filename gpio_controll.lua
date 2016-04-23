@@ -5,96 +5,52 @@ local template = template_file:read("*a")
 template_file:close()
 
 
--- You can uncomment this to test on machines without GPIO's:
--- local simulation = {}
 
--- Comment to disable debug log:
-function dprint(...) print("DEBUG: ", ...) end
+function setPin(pinid, state)
+	local pinid = assert(tonumber(pinid))
+	local state = assert(tonumber(state))	
 
-
-function write(what, where)
-    if simulation then
-        simulation[tostring(where)] = tostring(what)
-        dprint("SIMULATION WRITE", ("%q %q"):format(tostring(what), tostring(where)))
-        return
-    else
-        dprint("WRITE", ("%q %q"):format(tostring(what), tostring(where)))
-    end
-
-    local f = io.open(where, "w")
-    if f then
-        f:write(what)
-        f:close()
-        return
-    else
-        error("Can't open for write!")
-    end
-end
-
-function read(where)
-    if simulation then
-        dprint("SIMULATION READ", ("%q %q"):format(tostring(where), tostring(simulation[where] or 0)))
-        return simulation[where] or 0
-    else
-        dprint("READ", where)
-    end
-
-    local f = io.open(where, "r")
-    if f then
-        local t = f:read("*a")
-        f:close()
-        return t
-    else
-        error("Can't open for read!")
-    end
+	local cpin = config.pins[pinid]
+	if cpin then
+		os.execute(("gpio -1 mode %d out"):format(cpin.pin))
+		os.execute(("gpio -1 write %d %d"):format(cpin.pin, cpin.state))
+		cpin.state = state
+		cpin.active = (state == 1)
+		return true
+	end
 end
 
 
-
-local debugHandler = class("debugHandler", turbo.web.RequestHandler)
-function debugHandler:get()
-    self:write("<html><body><h1>Debug</h1>\n")
-    for k,v in pairs(simulation) do
-        self:write("<p><b>" .. k .. "</b>\t")
-        self:write("<i>" .. v .. "</i></p>\n")
-    end
-    self:write("\n</html></body>")
-end
 
 local Handler = class("Handler", turbo.web.RequestHandler)
-function Handler:get(pin, state)
-    if tonumber(pin) and tonumber(state) then
-        dprint("SETTING PIN", pin, state)
-        write(pin, "/sys/class/gpio/export")
-        write("out", "/sys/class/gpio/gpio" .. pin .. "/direction")
-        write(state, "/sys/class/gpio/gpio" .. pin .. "/value")
-        write(cpin, "/sys/class/gpio/unexport")
-    end
+function Handler:get(pinid, state)
+	local pinid = tonumber(pinid)
+	local state = tonumber(state)
 
-    local render = {
-        gpios = {},
-        date = os.date()
-    }
+	if pinid and state then
+		setPin(pinid, state)
+	end
 
-    for _, cpin in pairs(config.pins) do
-        dprint("READING PIN", cpin)
-        write(cpin, "/sys/class/gpio/export")
-        write("in", "/sys/class/gpio/gpio" .. cpin .. "/direction")
-        local value = read("/sys/class/gpio/gpio" .. cpin .. "/value")
-        local t = {
-            pin = cpin
-        }
-        if value == "1" then
-            t.active = true
-        end
-        render.gpios[#render.gpios + 1] = t
-        write(cpin, "/sys/class/gpio/unexport")
-    end
+	local render = {
+		gpios = config.pins,
+		date = os.date()
+	}
 
-    self:write(turbo.web.Mustache.render(template, render))
+
+	self:write(turbo.web.Mustache.render(template, {
+		gpios = config.pins
+	}))
 end
 
 
+
+for k,v in pairs(config.pins) do
+	v.pin = assert(tonumber(v.pin))
+	v.pinid = k
+	v.state = v.state or 0
+	v.active = v.active or false
+	v.name = v.name or "GPIO " .. v.pin
+end
 
 local app = turbo.web.Application({
     {"^/$", Handler},
@@ -105,3 +61,4 @@ local app = turbo.web.Application({
 
 app:listen(config.webport)
 turbo.ioloop.instance():start()
+
